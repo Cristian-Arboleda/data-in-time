@@ -1,5 +1,5 @@
 from table import *
-from dash import html, dcc, callback, ctx, no_update, Input, Output
+from dash import html, dcc, callback, ctx, no_update, Input, Output, State
 from dash.exceptions import PreventUpdate
 from plotly import graph_objects as go
 import plotly.express as px
@@ -78,7 +78,13 @@ graph = html.Div(
                 html.Div(
                     id='container_playback_speed',
                     children=[
+                        dcc.Interval(
+                            id='interval_playback_speed', 
+                            interval=1000,
+                            disabled=True,
+                        ),
                         html.Button(
+                            '▶️',
                             id='btn_playback_speed',
                             value='pause',
                         ),
@@ -89,18 +95,18 @@ graph = html.Div(
                             marks=None,
                             tooltip={"placement": "top"},
                         ),
-                        daq.BooleanSwitch(
-                            id='',
-                            on=False,
-                            label='Loop',
-                            labelPosition='left',
-                            color='green',
-                        )
+                        html.Div(
+                            daq.ToggleSwitch(
+                                id='loop_playback_speed',
+                                value=False,
+                                color="#4F57C2",
+                            ),
+                            title='Loop',
+                        ),
                     ]
                 ),
             ]
         ),
-
     ]
 )
 
@@ -139,7 +145,6 @@ def currencies_style_button(*inputs):
     store_currency = [{'currency': triggered}]
     result = currencies_buttons_styles + store_currency
     
-    print(result)
     return result
 
 # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -152,9 +157,6 @@ def currencies_style_button(*inputs):
 def update_graph(selected_countries, selected_years, selected_currency):
     
     selected_currency = selected_currency['currency']
-    print('Selected currency:', selected_currency)
-    print('Selected countries:', selected_countries)
-    print('Selected years:', selected_years)
     
     selected_years = [year for year in range(min(selected_years), max(selected_years) + 1, 1)]
     
@@ -187,20 +189,67 @@ def update_graph(selected_countries, selected_years, selected_currency):
     return fig
 
 # -------------------------------------------------------------------------------------------------------------------------------------------
+#Actualizar el icono del btn de reproduccion y el estado del dcc.Interval()
+max_range_years = max(data['year'])
+min_range_years = min(data['year'])
 
 @callback(
-    Output('btn_playback_speed', 'value'),
     Output('btn_playback_speed', 'children'),
+    Output('interval_playback_speed', 'disabled'),
+    Output('range_years', 'value'),
+    Output('interval_playback_speed', 'interval'),
     Input('btn_playback_speed', 'n_clicks'),
-    Input('btn_playback_speed', 'value')
+    Input('interval_playback_speed', 'n_intervals'),
+    State('btn_playback_speed', 'children'),
+    State('range_years', 'value'),
+    State('loop_playback_speed', 'value'),
+    State('slider_playback_speed', 'value'),
+    prevent_initial_call=True,
 )
-def playback(n_clicks, btn_play_back_speed_value):
-    play = 'play'
-    pause = 'pause'
-    if not n_clicks:
-        return '▶️', pause
+def update_states_playback(n_clicks, n_intervals, value_playback_speed, range_years, loop, speed_slider):
     
-    if btn_play_back_speed_value == pause:
-        return play, '▶️'
-    elif btn_play_back_speed_value == play:
-        return pause, '⏸️'
+    btn_playback = disabled = updated_range_years = interval = no_update
+    
+    play, pause = '▶️', '⏸️'
+    
+    triggered = ctx.triggered_id
+    
+    # Cuando se presione el boton de play
+    if triggered == 'btn_playback_speed':
+        if value_playback_speed == play:
+            
+            # El rango de los years se encuentra a el maximo, retablecer a sus valores minimos
+            if range_years[1] == max_range_years:
+                updated_range_years = [min_range_years, min_range_years]
+            else:
+                updated_range_years = no_update
+            
+            btn_playback = pause; disabled = False
+        
+        elif value_playback_speed == pause:
+            btn_playback = play; disabled = True; updated_range_years = no_update
+    
+    # Cuando el bucle este activado
+    elif triggered == 'interval_playback_speed':
+        
+        # Cuando el bucle llegue al valor maximo del range_years
+        if range_years[1] == max_range_years:
+            # Si el bucle esta activo
+            if loop:
+                btn_playback = no_update
+                disabled = no_update
+                updated_range_years = [min_range_years, min_range_years]
+            else: 
+                btn_playback = play
+                disabled = True
+                updated_range_years = no_update
+        
+        # bucle funcionando normalmente
+        else:
+            btn_playback = pause
+            disabled = no_update
+            updated_range_years = [range_years[0], range_years[1] + 1]
+            interval = 1000/speed_slider
+    
+    return btn_playback, disabled, updated_range_years, interval
+

@@ -50,9 +50,9 @@
 /* centrar slider */
 #range_years .rc-slider {
     width: calc(100% + 50px);   /* 25px izquierda + 25px derecha */
-    margin-left: -25px;
+    margin-left: -15px;
     margin-bottom: -25px;
-    margin-right: -25px;
+    margin-right: -15px;
 }
 
 
@@ -86,7 +86,7 @@
     justify-content: center;
     align-items: center;
     color: white;
-    gap: 5px;
+    gap: 10px;
 }
 #btn_playback_speed{
     background: none;
@@ -103,7 +103,7 @@
 #slider_playback_speed .rc-slider {
     width: calc(100% + 50px);   /* 25px izquierda + 25px derecha */
     margin-left: -25px;
-    margin-bottom: -15px;
+    margin-top: 25px;
 }
 
 #slider_playback_speed .rc-slider-track {
