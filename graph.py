@@ -47,7 +47,7 @@ chart = html.Div(
                     id='dropdown_countries',
                     options=options,
                     value=['Colombia'],
-                    style={'width': '100%'},
+                    style={'width': '100%', 'color': 'black'},
                     multi=True,
                 ),
                 
